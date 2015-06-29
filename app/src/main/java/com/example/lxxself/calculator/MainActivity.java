@@ -1,24 +1,45 @@
 package com.example.lxxself.calculator;
 
+import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.provider.Settings;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.internal.widget.ViewUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Switch;
 
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener {
     private Button bt0,bt1,bt2,bt3,bt4,bt5,bt6,bt7,bt8,bt9,btPoint,btClean,btDel,btMultiply,btMinus,btPlus,btDivide,btEqule;
     private EditText etInput;
-
+    private Switch modeSwitch;
+    private int theme = 0;
+    private String saveInput;
+    private Boolean switchState;
+    private static final String TAG = "MainActivity";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if(savedInstanceState==null){
+            theme=Utils.getAppTheme(this);
+        }else{
+            theme=savedInstanceState.getInt("theme");
+
+        }
+        setTheme(theme);
+        Log.i("theme", "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         bt0 = (Button) findViewById(R.id.bt0);
         bt1 = (Button) findViewById(R.id.bt1);
         bt2 = (Button) findViewById(R.id.bt2);
@@ -38,6 +59,22 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         btDivide = (Button) findViewById(R.id.btDivide);
         btEqule = (Button) findViewById(R.id.btEqule);
         etInput = (EditText) findViewById(R.id.etInput);
+
+        Intent intent = getIntent();
+        etInput.setText(intent.getStringExtra("input"));
+
+
+        //TODO 实现模式切换
+        modeSwitch = (Switch) findViewById(R.id.switchMode);
+        modeSwitch.setChecked(intent.getBooleanExtra("state", false));
+
+        modeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Utils.switchAppTheme(MainActivity.this);
+                reload();
+            }
+        });
 
         bt0.setOnClickListener(this);
         bt1.setOnClickListener(this);
@@ -59,28 +96,44 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         btEqule.setOnClickListener(this);
     }
 
-
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("theme", theme);
+        outState.putString("input", etInput.getText().toString());
+        outState.putBoolean("state", modeSwitch.getShowText());
     }
 
+    public void reload() {
+        Intent intent = getIntent();
+        intent.putExtra("input", etInput.getText().toString());
+        intent.putExtra("state", modeSwitch.isChecked());
+        overridePendingTransition(0, 0);//不设置进入退出动画
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        finish();
+        overridePendingTransition(0, 0);
+        startActivity(intent);
+    }
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    protected void onResume() {
+        Log.d(TAG,"onResume");
+        super.onResume();
+        if(theme==Utils.getAppTheme(this)){
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        }else{
+            reload();
         }
-
-        return super.onOptionsItemSelected(item);
     }
+
+
+
+
+
+
+
+
+
 
     @Override
     public void onClick(View v) {
